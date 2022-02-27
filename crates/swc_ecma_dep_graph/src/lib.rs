@@ -244,6 +244,10 @@ impl<'a> Visit for DependencyCollector<'a> {
                 } else {
                     DependencyKind::ImportEquals
                 }
+            } else if node.is_export {
+                DependencyKind::ExportEquals
+            } else {
+                DependencyKind::ImportEquals
             };
 
             self.items.push(DependencyDescriptor {

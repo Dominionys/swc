@@ -11,7 +11,8 @@ use swc_ecma_transforms_classes::super_field::SuperFieldAccessFolder;
 use swc_ecma_transforms_macros::fast_path;
 use swc_ecma_utils::{
     alias_ident_for, alias_if_required, constructor::inject_after_super, default_constructor,
-    private_ident, quote_ident, undefined, ExprFactory, ModuleItemLike, StmtLike, HANDLER,
+    is_literal, private_ident, quote_ident, undefined, ExprFactory, ModuleItemLike, StmtLike,
+    HANDLER,
 };
 use swc_ecma_visit::{
     as_folder, noop_visit_mut_type, noop_visit_type, Fold, Visit, VisitMut, VisitMutWith, VisitWith,
@@ -410,32 +411,32 @@ impl ClassProperties {
 
                 ClassMember::Method(method) => {
                     // we handle computed key here to preserve the execution order
-                    let key = match method.key {
+                    let key = if let PropName::Computed(ComputedPropName {
+                        span: c_span,
+                        mut expr,
+                    }) = method.key
+                    {
+                        vars.extend(visit_private_in_expr(&mut expr, &self.private, self.c));
+
+                        expr.visit_mut_with(&mut ClassNameTdzFolder {
+                            class_name: &class_ident,
+                        });
+                        let ident = private_ident!("tmp");
+                        // Handle computed property
+                        vars.push(VarDeclarator {
+                            span: DUMMY_SP,
+                            name: ident.clone().into(),
+                            init: Some(expr),
+                            definite: false,
+                        });
+                        // We use computed because `classes` pass converts PropName::Ident to
+                        // string.
                         PropName::Computed(ComputedPropName {
                             span: c_span,
-                            mut expr,
-                        }) => {
-                            vars.extend(visit_private_in_expr(&mut expr, &self.private, self.c));
-
-                            expr.visit_mut_with(&mut ClassNameTdzFolder {
-                                class_name: &class_ident,
-                            });
-                            let ident = private_ident!("tmp");
-                            // Handle computed property
-                            vars.push(VarDeclarator {
-                                span: DUMMY_SP,
-                                name: ident.clone().into(),
-                                init: Some(expr),
-                                definite: false,
-                            });
-                            // We use computed because `classes` pass converts PropName::Ident to
-                            // string.
-                            PropName::Computed(ComputedPropName {
-                                span: c_span,
-                                expr: Box::new(Expr::Ident(ident)),
-                            })
-                        }
-                        _ => method.key,
+                            expr: Box::new(Expr::Ident(ident)),
+                        })
+                    } else {
+                        method.key
                     };
                     members.push(ClassMember::Method(ClassMethod { key, ..method }))
                 }
@@ -457,27 +458,33 @@ impl ClassProperties {
                     }
 
                     if let PropName::Computed(key) = &mut prop.key {
-                        vars.extend(visit_private_in_expr(&mut key.expr, &self.private, self.c));
-                        let (ident, aliased) = if let Expr::Ident(i) = &*key.expr {
-                            if used_key_names.contains(&i.sym) {
-                                (alias_ident_for(&key.expr, "_ref"), true)
+                        if !is_literal(&key.expr) {
+                            vars.extend(visit_private_in_expr(
+                                &mut key.expr,
+                                &self.private,
+                                self.c,
+                            ));
+                            let (ident, aliased) = if let Expr::Ident(i) = &*key.expr {
+                                if used_key_names.contains(&i.sym) {
+                                    (alias_ident_for(&key.expr, "_ref"), true)
+                                } else {
+                                    alias_if_required(&key.expr, "_ref")
+                                }
                             } else {
                                 alias_if_required(&key.expr, "_ref")
+                            };
+                            // ident.span = ident.span.apply_mark(Mark::fresh(Mark::root()));
+                            if aliased {
+                                // Handle computed property
+                                vars.push(VarDeclarator {
+                                    span: DUMMY_SP,
+                                    name: ident.clone().into(),
+                                    init: Some(key.expr.take()),
+                                    definite: false,
+                                });
                             }
-                        } else {
-                            alias_if_required(&key.expr, "_ref")
-                        };
-                        // ident.span = ident.span.apply_mark(Mark::fresh(Mark::root()));
-                        if aliased {
-                            // Handle computed property
-                            vars.push(VarDeclarator {
-                                span: DUMMY_SP,
-                                name: ident.clone().into(),
-                                init: Some(key.expr.take()),
-                                definite: false,
-                            });
+                            *key.expr = Expr::from(ident);
                         }
-                        *key.expr = Expr::from(ident);
                     };
 
                     let mut value = prop.value.unwrap_or_else(|| undefined(prop_span));

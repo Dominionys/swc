@@ -781,6 +781,7 @@ where
     #[emitter]
     fn emit_value(&mut self, n: &Value) -> Result {
         match n {
+            Value::ComponentValue(n) => emit!(self, n),
             Value::Function(n) => emit!(self, n),
             Value::SimpleBlock(n) => emit!(self, n),
             Value::Dimension(n) => emit!(self, n),
@@ -795,7 +796,7 @@ where
             Value::CalcSum(n) => emit!(self, n),
             Value::Url(n) => emit!(self, n),
             Value::Delimiter(n) => emit!(self, n),
-            Value::Urange(n) => emit!(self, n),
+            Value::UnicodeRange(n) => emit!(self, n),
             Value::ComplexSelector(n) => emit!(self, n),
             Value::PreservedToken(n) => emit!(self, n),
         }
@@ -893,7 +894,7 @@ where
                 ComponentValue::Rule(_) | ComponentValue::KeyframeBlock(_) => {
                     formatting_newline!(self);
                 }
-                ComponentValue::DeclarationBlockItem(_) if idx == 0 => {
+                ComponentValue::DeclarationOrAtRule(_) if idx == 0 => {
                     formatting_newline!(self);
                 }
                 _ => {}
@@ -925,11 +926,11 @@ where
                         formatting_newline!(self);
                     }
                 }
-                ComponentValue::DeclarationBlockItem(i) => match i {
-                    DeclarationBlockItem::AtRule(_) => {
+                ComponentValue::DeclarationOrAtRule(i) => match i {
+                    DeclarationOrAtRule::AtRule(_) => {
                         formatting_newline!(self);
                     }
-                    DeclarationBlockItem::Declaration(_) => {
+                    DeclarationOrAtRule::Declaration(_) => {
                         if idx != len - 1 {
                             semi!(self);
                         } else {
@@ -938,13 +939,14 @@ where
 
                         formatting_newline!(self);
                     }
-                    DeclarationBlockItem::Invalid(_) => {}
+                    DeclarationOrAtRule::Invalid(_) => {}
                 },
                 ComponentValue::Value(_) => {
                     if ending == ']' && idx != len - 1 {
                         space!(self);
                     }
                 }
+                _ => {}
             }
         }
 
@@ -954,8 +956,11 @@ where
     #[emitter]
     fn emit_component_value(&mut self, n: &ComponentValue) -> Result {
         match n {
+            ComponentValue::PreservedToken(n) => emit!(self, n),
+            ComponentValue::Function(n) => emit!(self, n),
+            ComponentValue::SimpleBlock(n) => emit!(self, n),
             ComponentValue::StyleBlock(n) => emit!(self, n),
-            ComponentValue::DeclarationBlockItem(n) => emit!(self, n),
+            ComponentValue::DeclarationOrAtRule(n) => emit!(self, n),
             ComponentValue::Rule(n) => emit!(self, n),
             ComponentValue::Value(n) => emit!(self, n),
             ComponentValue::KeyframeBlock(n) => emit!(self, n),
@@ -973,11 +978,11 @@ where
     }
 
     #[emitter]
-    fn emit_declaration_block_item(&mut self, n: &DeclarationBlockItem) -> Result {
+    fn emit_declaration_block_item(&mut self, n: &DeclarationOrAtRule) -> Result {
         match n {
-            DeclarationBlockItem::Declaration(n) => emit!(self, n),
-            DeclarationBlockItem::AtRule(n) => emit!(self, n),
-            DeclarationBlockItem::Invalid(n) => emit!(self, n),
+            DeclarationOrAtRule::Declaration(n) => emit!(self, n),
+            DeclarationOrAtRule::AtRule(n) => emit!(self, n),
+            DeclarationOrAtRule::Invalid(n) => emit!(self, n),
         }
     }
 
@@ -1508,8 +1513,19 @@ where
     }
 
     #[emitter]
-    fn emit_urange(&mut self, n: &Urange) -> Result {
-        self.wr.write_raw(Some(n.span), &n.value)?;
+    fn emit_unicode_range(&mut self, n: &UnicodeRange) -> Result {
+        let mut value = String::new();
+
+        value.push(n.prefix);
+        value.push('+');
+        value.push_str(&n.start);
+
+        if let Some(end) = &n.end {
+            value.push('-');
+            value.push_str(end);
+        }
+
+        self.wr.write_raw(Some(n.span), &value)?;
     }
 
     #[emitter]

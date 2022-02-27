@@ -1041,35 +1041,34 @@ var _ref = one(),
     _ref1 = 2 * 4 + 7,
     _ref2 = 2 * four + 7,
     _ref3 = 2 * four + seven,
-    _ref4 = null,
     _undefined = undefined,
-    _ref5 = void 0,
-    tmp = 'whatever',
-    tmp1 = 'whatever',
+    _ref4 = void 0,
+    tmp = "whatever",
+    tmp1 = "whatever",
     tmp2 = computed(),
     tmp3 = computed(),
-    tmp4 = 'test' + one,
+    tmp4 = "test" + one,
     tmp5 = 10,
-    _ref6 = /regex/,
+    _ref5 = /regex/,
     _foo = foo,
     _bar = bar,
     _baz = baz,
-    _ref7 = `template`, _ref8 = `template${expression}`;
+    _ref6 = `template${expression}`;
 
 
 var MyClass = function() {
     'use strict';
     function MyClass() {
         _classCallCheck(this, MyClass);
-        _defineProperty(this, _ref4, 'null');
+        _defineProperty(this, null, "null");
         _defineProperty(this, _undefined, 'undefined');
-        _defineProperty(this, _ref5, 'void 0');
-        _defineProperty(this, _ref6, 'regex');
+        _defineProperty(this, _ref4, "void 0");
+        _defineProperty(this, _ref5, "regex");
         _defineProperty(this, _foo, 'foo');
         _defineProperty(this, _bar, 'bar');
         _defineProperty(this, _baz, 'baz');
-        _defineProperty(this, _ref7, 'template');
-        _defineProperty(this, _ref8, 'template-with-expression');
+        _defineProperty(this, `template`, "template");
+        _defineProperty(this, _ref6, "template-with-expression");
     }
     _createClass(MyClass, [{
              key: tmp, get: function () {
@@ -5468,11 +5467,11 @@ test!(
     var _y = new WeakMap(), _sssss = new WeakSet();
     class Foo {
         constructor(){
+            _classPrivateMethodInit(this, _sssss);
             _classPrivateFieldInit(this, _y, {
                 writable: true,
                 value: void 0
             });
-            _classPrivateMethodInit(this, _sssss);
             this.x = 1;
             _classPrivateFieldSet(this, _y, 2);
             _classPrivateMethodGet(this, _sssss, sssss).call(this);
@@ -5587,6 +5586,23 @@ const foo = new Foo();
 
 expect(foo.bar).toBe(undefined);
 expect(foo.baz).toBe(undefined);
+"
+);
+
+test_exec!(
+    syntax(),
+    |_| class_properties(Default::default()),
+    class_field_evalutaion_order,
+    "
+class Foo {
+  a = this.#b;
+  get #b() {
+    return 1
+  }
+  static #c = this.#d();
+  static #d() {}
+}
+expect(() => new Foo()).not.toThrow();
 "
 );
 
@@ -5818,11 +5834,11 @@ class A {
         };
     }
     constructor(){
+        _classPrivateMethodInit(this, _bar);
         _classPrivateFieldInit(this, _a, {
             writable: true,
             value: 'fff'
         });
-        _classPrivateMethodInit(this, _bar);
     }
 }
 var _b = {
@@ -6058,7 +6074,7 @@ class MyClass {
 const foo = "foo";
 const bar = ()=>{};
 const four = 4;
-var _ref = one(), _ref1 = 2 * 4 + 7, _ref2 = 2 * four + 7, _ref3 = 2 * four + seven, _ref4 = null, _undefined = undefined, _ref5 = void 0, tmp = "whatever", tmp1 = "whatever", tmp2 = computed(), tmp3 = computed(), tmp4 = "test" + one, tmp5 = 10, _ref6 = /regex/, _foo = foo, _bar = bar, _baz = baz, _ref7 = `template`, _ref8 = `template${expression}`;
+var _ref = one(), _ref1 = 2 * 4 + 7, _ref2 = 2 * four + 7, _ref3 = 2 * four + seven, _undefined = undefined, _ref4 = void 0, tmp = "whatever", tmp1 = "whatever", tmp2 = computed(), tmp3 = computed(), tmp4 = "test" + one, tmp5 = 10, _ref5 = /regex/, _foo = foo, _bar = bar, _baz = baz, _ref6 = `template${expression}`;
 class MyClass {
     get [tmp]() {}
     set [tmp1](value) {}
@@ -6067,15 +6083,15 @@ class MyClass {
     [tmp4]() {}
     static [tmp5]() {}
     constructor(){
-        this[_ref4] = "null";
+        this[null] = "null";
         this[_undefined] = "undefined";
-        this[_ref5] = "void 0";
-        this[_ref6] = "regex";
+        this[_ref4] = "void 0";
+        this[_ref5] = "regex";
         this[_foo] = "foo";
         this[_bar] = "bar";
         this[_baz] = "baz";
-        this[_ref7] = "template";
-        this[_ref8] = "template-with-expression";
+        this[`template`] = "template";
+        this[_ref6] = "template-with-expression";
     }
 }
 MyClass[_ref] = "test";
@@ -6187,13 +6203,13 @@ class Cl {
   }
 
   constructor() {
-    Object.defineProperty(this, _privateField, {
-      writable: true,
-      value: "top secret string"
-    });
     Object.defineProperty(this, _privateFieldValue, {
       get: get_privateFieldValue,
       set: set_privateFieldValue
+    });
+    Object.defineProperty(this, _privateField, {
+      writable: true,
+      value: "top secret string"
     });
     this.publicField = "not secret string";
   }
@@ -6230,13 +6246,13 @@ class Cl { }
 Object.defineProperty(Cl, _foo, {
     value: foo
 });
-Object.defineProperty(Cl, _f, {
-    writable: true,
-    value: 123
-});
 Object.defineProperty(Cl, _bar, {
     get: get_bar,
     set: void 0
+});
+Object.defineProperty(Cl, _f, {
+    writable: true,
+    value: 123
 });
 function foo() {}
 function get_bar() {}
@@ -6269,13 +6285,13 @@ var _privateField = /*#__PURE__*/_classPrivateFieldLooseKey("_privateField"), _p
 
 class Cl {
   constructor() {
-    Object.defineProperty(this, _privateField, {
-      writable: true,
-      value: 0
-    });
     Object.defineProperty(this, _privateFieldValue, {
       get: get_privateFieldValue,
       set: void 0
+    });
+    Object.defineProperty(this, _privateField, {
+      writable: true,
+      value: 0
     });
     _classPrivateFieldLooseBase(this, _privateFieldValue)[_privateFieldValue] = 1;
     [_classPrivateFieldLooseBase(this, _privateFieldValue)[_privateFieldValue]] = [1];
@@ -6380,13 +6396,13 @@ class Cl {
   }
 
   constructor() {
-    Object.defineProperty(this, _privateField, {
-      writable: true,
-      value: "top secret string"
-    });
     Object.defineProperty(this, _privateFieldValue, {
       get: get_privateFieldValue,
       set: set_privateFieldValue
+    });
+    Object.defineProperty(this, _privateField, {
+      writable: true,
+      value: "top secret string"
     });
     this.publicField = "not secret string";
   }
